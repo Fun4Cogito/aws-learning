@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  cliVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/24
+      Tags:
+        - Key: Name
+          Value: cliVPC
+  cliSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref cliVPC
+      CidrBlock: 10.0.0.16/28

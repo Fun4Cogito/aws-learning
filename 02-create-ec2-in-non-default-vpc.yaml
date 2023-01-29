@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  cliVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/24
+  cliSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref cliVPC
+      CidrBlock: 10.0.0.16/28
+  TestServer:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    Properties:
+      ImageId: ami-0bba69335379e17f8
+      InstanceType: t2.micro
+      SubnetId: !Ref cliSubnet

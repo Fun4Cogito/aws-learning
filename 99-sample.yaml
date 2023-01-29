@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  mallVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.1.0.0/16
+      Tags:
+        - Key: Name
+          Value: mallVpc
+  mallPubSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref mallVpc
+      CidrBlock: 10.1.1.0/24
+      Tags:
+        - Key: Name
+          Value: mallPubSubnet
+  mallPriSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref mallVpc
+      CidrBlock: 10.1.2.0/24
+      Tags:
+        - Key: Name
+          Value: mallPriSubnet
+  jumpServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: jumpServerSecurityGroup
+      GroupName: jumpServerSecurityGroup
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref mallVpc
+      Tags:
+        - Key: Name
+          Value: jumpServerSecurityGroup
+  appServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: appServerSecurityGroup
+      GroupName: appServerSecurityGroup
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref mallVpc
+      Tags:
+        - Key: Name
+          Value: appServerSecurityGroup
+  jumpServerRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref mallVpc
+      Tags:
+        - Key: Name
+          Value: jumpServerRouteTable
+  jumpServerRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref jumpServerRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref mallInternetGateway
+  jumpServerRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref mallPubSubnet
+      RouteTableId: !Ref jumpServerRouteTable
+  mallInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: mallInternetGateway
+  mallVpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref mallVpc
+      InternetGatewayId: !Ref mallInternetGateway
+
+  appServerRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref mallVpc
+      Tags:
+        - Key: Name
+          Value: appServerRouteTable
+  appServerRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref mallPriSubnet
+      RouteTableId: !Ref appServerRouteTable
+
+  natGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt natGatewayEIP.AllocationId
+      SubnetId: !Ref mallPubSubnet
+      Tags:
+      - Key: Name
+        Value: natGateway
+  natGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+        Domain: vpc
+  routeNATGateway:
+    DependsOn: natGateway
+    Type: AWS::EC2::Route
+    Properties:
+        RouteTableId: !Ref appServerRouteTable
+        DestinationCidrBlock: '0.0.0.0/0'
+        NatGatewayId: !Ref natGateway
+
+  jumpServer:
+    Type: AWS::EC2::Instance
+    # CreationPolicy:
+    #   ResourceSignal:
+    #     Timeout: PT15M
+    Properties:
+      ImageId: ami-06ee4e2261a4dc5c3
+      InstanceType: t2.micro
+      KeyName: jumperKeyPair
+      NetworkInterfaces: 
+      - AssociatePublicIpAddress: true
+        DeviceIndex: "0"
+        GroupSet: 
+          - !Ref jumpServerSecurityGroup
+        SubnetId: !Ref mallPubSubnet
+      Tags:
+        - Key: Name
+          Value: jumpServer
+  appServer:
+    Type: AWS::EC2::Instance
+    # CreationPolicy:
+    #   ResourceSignal:
+    #     Timeout: PT15M
+    Properties:
+      ImageId: ami-06ee4e2261a4dc5c3
+      InstanceType: t2.micro
+      KeyName: appKeyPair
+      SubnetId: !Ref mallPriSubnet
+      SecurityGroupIds:
+        - !Ref appServerSecurityGroup
+      Tags:
+        - Key: Name
+          Value: appServer
