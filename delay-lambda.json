@@ -1,0 +1,38 @@
+{
+    "actions": {
+        "delay-lambda-action": {
+            "actionId": "aws:lambda:invocation-add-delay",
+            "parameters": {
+                "duration": "PT15M",
+                "invocationPercentage": "100",
+                "startupDelayMilliseconds": "1000"
+            },
+            "targets": {
+                "Functions": "Functions-Target-1"
+            }
+        }
+    },
+    "description": "delay-lambda",
+    "experimentOptions": {
+        "accountTargeting": "single-account",
+        "emptyTargetResolutionMode": "fail"
+    },
+    "roleArn": "arn:aws:iam::977565376628:role/service-role/AWSFISIAMRole-1731857222436",
+    "stopConditions": [
+        {
+            "source": "none"
+        }
+    ],
+    "tags": {
+        "Name": "delay-lambda"
+    },
+    "targets": {
+        "Functions-Target-1": {
+            "resourceArns": [
+                "arn:aws:lambda:ap-northeast-1:977565376628:function:test_function"
+            ],
+            "resourceType": "aws:lambda:function",
+            "selectionMode": "ALL"
+        }
+    }
+}
